@@ -3,10 +3,11 @@
 Contains methods and attributes
 for authentication
 """
-from bcrypt import hashpw, gensalt
+from bcrypt import hashpw, gensalt, checkpw
 from db import DB
 from user import User
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import InvalidRequestError
 
 
 def _hash_password(password: str) -> bytes:
@@ -52,3 +53,22 @@ class Auth:
             hashed_password = _hash_password(password).decode('utf-8')
             new_user = self._db.add_user(email, hashed_password)
             return new_user
+
+    def valid_login(self, email: str, password: str) -> bool:
+        """
+        Validates login.
+        Args:
+            email: The user's email.
+            password: The user's password.
+        Returns:
+            bool: True if the login is valid else False.
+        """
+        if not email or not password:
+            return False
+        try:
+            existing_user = self._db.find_user_by(email=email)
+            hashed_password = existing_user.hashed_password
+            return checkpw(password.encode(),
+                           hashed_password.encode('utf-8'))
+        except (NoResultFound, InvalidRequestError):
+            return False
