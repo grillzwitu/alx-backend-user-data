@@ -2,7 +2,7 @@
 """
 Basic Flask app.
 """
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, abort
 from auth import Auth
 from typing import Union
 
@@ -46,6 +46,31 @@ def new_user() -> Union[str, tuple]:
         return jsonify({
             "message": "email already registered"
             }), 400
+
+
+@app.route('/sessions', methods=['POST'], strict_slashes=False)
+def login() -> str:
+    """
+    POST method, route /sessions
+    Creates new user session, stores the session id as a cookie
+
+    Return:
+      - json payload
+    """
+
+    # Get data from form request,
+    # convert to json with request.get_json() for the body
+    email = request.form.get("email")
+    password = request.form.get("password")
+    valid_login = AUTH.valid_login(email, password)
+
+    if not valid_login:
+        abort(401)
+    session_id = AUTH.create_session(email)
+    response_content = {"email": email, "message": "logged in"}
+    response = jsonify(response_content)
+    response.set_cookie("session_id", session_id)
+    return response
 
 
 if __name__ == "__main__":
