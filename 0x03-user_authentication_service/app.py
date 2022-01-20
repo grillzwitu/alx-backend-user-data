@@ -2,7 +2,9 @@
 """
 Basic Flask app.
 """
-from flask import Flask, jsonify, request, abort
+from crypt import methods
+from flask import Flask, jsonify, request, abort, redirect
+from sqlalchemy import false
 from auth import Auth
 from typing import Union
 
@@ -71,6 +73,22 @@ def login() -> str:
     response = jsonify(response_content)
     response.set_cookie("session_id", session_id)
     return response
+
+
+@app.route('/sessions', methods=['DELETE'], strict_slashes=False)
+def logout():
+    """
+    method DELETE, route /sessions
+    Destroys a user session by finding the session_id key in the cookie
+    Return:
+      Redirects the user to the Base route (GET /)
+    """
+    the_cookie = request.cookies.get("session_id", None)
+    user = AUTH.get_user_from_session_id(the_cookie)
+    if the_cookie is None or user is None:
+        abort(403)
+    AUTH.destroy_session(user.id)
+    return redirect('/')
 
 
 if __name__ == "__main__":
