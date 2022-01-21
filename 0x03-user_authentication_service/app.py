@@ -97,8 +97,8 @@ def profile() -> str:
     method GET, route /profile
     Finds the user using session id
     Return:
-        - User email with status 200
-        - 403 if session id is invalid
+        - User's email with status 200
+        - 403 error if session id is invalid
     """
     user_cookie = request.cookies.get("session_id", None)
     if user_cookie is None:
@@ -107,6 +107,24 @@ def profile() -> str:
     if user is None:
         abort(403)
     return jsonify({"email": user.email}), 200
+
+
+@app.route('/reset_password', methods=['POST'], strict_slashes=False)
+def get_reset_password_token() -> tuple:
+    """ method POST, route /reset_password
+        Args
+            - The user's email
+        Return:
+            - json payload
+            - 403 if email not registered
+    """
+    email = request.form.get('email')
+    try:
+        token = AUTH.get_reset_password_token(email)
+        return jsonify({"email": email,
+                        "reset_token": token}), 200
+    except ValueError:
+        abort(403)
 
 
 if __name__ == "__main__":
